@@ -9,7 +9,7 @@ import me.ibrahim.appdownloader.service.DownloadService
 
 class DownloadCompleteReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        DownloadManager.ACTION_VIEW_DOWNLOADS
+
         if (intent.action == DownloadManager.ACTION_DOWNLOAD_COMPLETE) {
             val downloadId = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
             Log.d("DownloadReceiver", "Download completed: $downloadId")

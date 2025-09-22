@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">AppDownloader</string>
-    <string name="lujo_app_installer">Lujo App Installer</string>
+    <string name="outlook_app_installer">Outlook App Installer</string>
     <string name="download_and_install">Download and Install</string>
 </resources>

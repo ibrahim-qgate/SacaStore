@@ -46,10 +46,12 @@ class DownloadService : Service() {
 
     private fun getAppInfoObject(): AppInfo {
         return AppInfo(
-            name = "Lujo",
-            packageName = "com.lujo",
+            name = "Outlook",
+            packageName = "com.microsoft.outlook",
             version = "1.0.0",
-            downloadUrl = "https://github.com/mik237/BonialBrochures/releases/download/main-1.0/lujo-release.apk"
+//            downloadUrl = "https://github.com/mik237/BonialBrochures/releases/download/main-1.0/lujo-release.apk"
+//            downloadUrl = "https://github.com/ibrahim-qgate/host_apk/releases/download/outlook/Outlook_4.2534.2_apkcombo.com.apk",
+            downloadUrl = "https://github.com/ibrahim-qgate/host_apk/releases/download/outlook/microsoft_outlook_minAPI28-universal-nodpi_.apk",
         )
     }
 
@@ -69,12 +71,12 @@ class DownloadService : Service() {
             val downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
 
             val request = DownloadManager.Request(appInfo.downloadUrl.toUri())
-                .setTitle("Downloading ${appInfo.name}")
+                .setTitle("${appInfo.name}.apk")
                 .setDescription("Downloading application")
                 .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
 //                .setDestinationInExternalPublicDir(
 //                    Environment.DIRECTORY_DOWNLOADS,
-//                    "${appInfo.packageName}.apk"
+//                    "${appInfo.name}.apk"
 //                )
                 .setDestinationUri(Uri.fromFile(apkFile))
                 .setAllowedOverMetered(true)
@@ -115,6 +117,7 @@ class DownloadService : Service() {
         cursor.close()
     }
 
+    @SuppressLint("RequestInstallPackagesPolicy")
     private fun installUsingPackageInstaller(context: Context, apkFile: File) {
         val packageInstaller = context.packageManager.packageInstaller
         val sessionParams = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
@@ -136,6 +139,7 @@ class DownloadService : Service() {
             val intent = Intent(context, InstallResultReceiver::class.java).apply {
                 action = "INSTALL_COMPLETE"
                 putExtra("sessionId", sessionId)
+                putExtra("fileUri", apkFile.toUri().toString())
             }
 
             val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

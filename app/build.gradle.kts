@@ -24,6 +24,16 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
+
+    applicationVariants.all {
+        if(buildType.name == "release"){
+            outputs.all {
+                val outputImpl = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+                val versionNameSafe = versionName.replace(" ", "_")
+                outputImpl.outputFileName = "App_Downloader_v${versionNameSafe}.apk"
+            }
+        }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
