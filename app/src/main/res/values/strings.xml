@@ -2,4 +2,7 @@
     <string name="app_name">AppDownloader</string>
     <string name="outlook_app_installer">Outlook App Installer</string>
     <string name="download_and_install">Download and Install</string>
+    <string name="downloading">Downloading..</string>
+    <string name="installing">Installing..</string>
+    <string name="title_activity_app_list">AppListActivity</string>
 </resources>

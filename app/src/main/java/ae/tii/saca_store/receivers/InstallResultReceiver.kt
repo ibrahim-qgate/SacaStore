@@ -1,4 +1,4 @@
-package me.ibrahim.appdownloader.receivers
+package ae.tii.saca_store.receivers
 
 import android.content.BroadcastReceiver
 import android.content.Context

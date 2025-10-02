@@ -1,4 +1,4 @@
-package me.ibrahim.appdownloader
+package ae.tii.saca_store.domain
 
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
@@ -10,5 +10,6 @@ data class AppInfo(
     val version: String,
     val downloadUrl: String,
     val iconUrl: String? = null,
-    val description: String? = null
+    val description: String? = null,
+    val abi: String = ""
 ) : Parcelable

@@ -1,11 +1,11 @@
-package me.ibrahim.appdownloader.receivers
+package ae.tii.saca_store.receivers
 
 import android.app.DownloadManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import me.ibrahim.appdownloader.service.DownloadService
+import ae.tii.saca_store.service.DownloadService
 
 class DownloadCompleteReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {

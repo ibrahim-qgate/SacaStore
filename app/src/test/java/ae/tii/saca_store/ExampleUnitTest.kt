@@ -1,4 +1,4 @@
-package me.ibrahim.appdownloader
+package ae.tii.saca_store
 
 import org.junit.Test
 

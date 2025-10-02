@@ -1,4 +1,4 @@
-package me.ibrahim.appdownloader.service
+package ae.tii.saca_store.service
 
 import android.annotation.SuppressLint
 import android.app.DownloadManager
@@ -14,8 +14,8 @@ import android.os.IBinder
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
-import me.ibrahim.appdownloader.AppInfo
-import me.ibrahim.appdownloader.receivers.InstallResultReceiver
+import ae.tii.saca_store.domain.AppInfo
+import ae.tii.saca_store.receivers.InstallResultReceiver
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
