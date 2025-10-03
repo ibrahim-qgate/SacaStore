@@ -1,11 +1,7 @@
 package ae.tii.saca_store.presentation.viewmodels
 
-import ae.tii.saca_store.domain.AppInfo
 import ae.tii.saca_store.domain.IAppRepository
 import ae.tii.saca_store.presentation.ui.AppListUiState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -15,7 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class AppListViewModel(
+class AppViewModel(
     private val repository: IAppRepository
 ) : ViewModel() {
 

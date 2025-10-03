@@ -5,6 +5,6 @@ import ae.tii.saca_store.domain.IAppRepository
 
 class AppRepositoryImpl : IAppRepository {
     override fun getAppList(): List<AppInfo> {
-        TODO("Not yet implemented")
+        return emptyList()
     }
 }
