@@ -2,6 +2,8 @@ package ae.tii.saca_store.presentation.ui
 
 import ae.tii.saca_store.presentation.ui.composables.AppListItem
 import ae.tii.saca_store.presentation.viewmodels.AppViewModel
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
@@ -9,6 +11,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 
 @Composable
 fun AppListScreen(viewModel: AppViewModel) {
@@ -18,7 +22,12 @@ fun AppListScreen(viewModel: AppViewModel) {
 
     when (uiState) {
         is AppListUiState.Loading -> {
-            CircularProgressIndicator()
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
         }
 
         is AppListUiState.Success -> {
@@ -30,7 +39,12 @@ fun AppListScreen(viewModel: AppViewModel) {
         }
 
         is AppListUiState.Error -> {
-            Text("Error: ${(uiState as AppListUiState.Error).message}")
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Error: ${(uiState as AppListUiState.Error).message}")
+            }
         }
     }
 }
