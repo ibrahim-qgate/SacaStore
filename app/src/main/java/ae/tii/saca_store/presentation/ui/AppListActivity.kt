@@ -2,7 +2,6 @@ package ae.tii.saca_store.presentation.ui
 
 import ae.tii.saca_store.presentation.navigation.NavigationHost
 import ae.tii.saca_store.presentation.ui.theme.AppDownloaderTheme
-import ae.tii.saca_store.presentation.viewmodels.AppViewModel
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -12,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.ViewModelProvider
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
