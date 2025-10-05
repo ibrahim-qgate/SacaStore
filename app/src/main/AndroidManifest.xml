@@ -21,6 +21,7 @@
         tools:ignore="ProtectedPermissions" />
 
     <application
+        android:name=".presentation.SacaStore"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -32,7 +33,6 @@
         <activity
             android:name=".presentation.ui.AppListActivity"
             android:exported="true"
-            android:label="@string/title_activity_app_list"
             android:theme="@style/Theme.AppDownloader">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

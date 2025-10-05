@@ -3,7 +3,6 @@ package ae.tii.saca_store.presentation.ui
 import ae.tii.saca_store.presentation.navigation.NavigationHost
 import ae.tii.saca_store.presentation.ui.theme.AppDownloaderTheme
 import ae.tii.saca_store.presentation.viewmodels.AppViewModel
-import ae.tii.saca_store.util.AppListViewModelFactory
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -14,23 +13,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelProvider
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class AppListActivity : ComponentActivity() {
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
-        val factory = AppListViewModelFactory()
-        val viewModel: AppViewModel =
-            ViewModelProvider(this, factory)[AppViewModel::class.java]
-
         setContent {
             AppDownloaderTheme {
                 Scaffold(modifier = Modifier.Companion.fillMaxSize()) { innerPadding ->
                     Box(modifier = Modifier.padding(innerPadding)) {
-                        NavigationHost(modifier = Modifier, viewModel)
+                        NavigationHost(modifier = Modifier)
                     }
                 }
             }

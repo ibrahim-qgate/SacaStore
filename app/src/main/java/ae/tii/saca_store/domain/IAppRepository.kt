@@ -1,5 +1,7 @@
 package ae.tii.saca_store.domain
 
+import ae.tii.saca_store.util.NetworkResponse
+
 interface IAppRepository {
-    fun getAppList(): List<AppInfo>
+    suspend fun getAppList(): NetworkResponse<List<AppInfo>>
 }

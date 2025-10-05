@@ -1,5 +1,6 @@
 package ae.tii.saca_store.presentation.ui
 
+import ae.tii.saca_store.presentation.ui.composables.AppListItem
 import ae.tii.saca_store.presentation.viewmodels.AppViewModel
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -23,7 +24,7 @@ fun AppListScreen(viewModel: AppViewModel) {
         is AppListUiState.Success -> {
             LazyColumn {
                 items((uiState as AppListUiState.Success).apps) { app ->
-                    Text(text = app.name)
+                    AppListItem(app)
                 }
             }
         }

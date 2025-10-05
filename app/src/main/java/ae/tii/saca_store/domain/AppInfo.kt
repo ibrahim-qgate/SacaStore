@@ -2,8 +2,9 @@ package ae.tii.saca_store.domain
 
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.Serializable
 
-@Parcelize
+@Serializable
 data class AppInfo(
     val name: String,
     val packageName: String,
@@ -12,4 +13,4 @@ data class AppInfo(
     val iconUrl: String? = null,
     val description: String? = null,
     val abi: String = ""
-) : Parcelable
+)
