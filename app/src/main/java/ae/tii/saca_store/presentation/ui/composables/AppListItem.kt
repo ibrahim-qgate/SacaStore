@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 
 @Composable
-fun AppListItem(app: AppInfo) {
+fun AppListItem(app: AppInfo, onDownloadClick: (AppInfo) -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -73,7 +73,7 @@ fun AppListItem(app: AppInfo) {
             }
 
             // Download Button
-            IconButton(onClick = { }) {
+            IconButton(onClick = { onDownloadClick.invoke(app) }) {
                 Icon(
                     painterResource(R.drawable.download),
                     contentDescription = "Download"

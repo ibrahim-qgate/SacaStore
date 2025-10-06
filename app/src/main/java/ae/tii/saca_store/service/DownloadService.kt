@@ -16,6 +16,7 @@ import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import ae.tii.saca_store.domain.AppInfo
 import ae.tii.saca_store.receivers.InstallResultReceiver
+import android.util.Log
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
@@ -60,7 +61,8 @@ class DownloadService : Service() {
     private fun downloadApp(appInfo: AppInfo) {
         try {
 
-            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            val downloadsDir =
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
             val apkFile = File(downloadsDir, "${appInfo.packageName}.apk")
 
             // Delete existing file if it exists
@@ -90,8 +92,9 @@ class DownloadService : Service() {
 
     private fun installAppWithPackageInstaller(context: Context, receivedDownloadId: Long) {
         val downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-        val query = DownloadManager.Query().setFilterById(downloadId)
+        val query = DownloadManager.Query().setFilterById(receivedDownloadId)
         val cursor = downloadManager.query(query)
+        Log.d("DownloadReceiver", "Installing: $receivedDownloadId")
 
         if (cursor.moveToFirst()) {
             val columnIndex = cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI)
@@ -105,11 +108,13 @@ class DownloadService : Service() {
                     try {
                         installUsingPackageInstaller(context, apkFile)
                     } catch (e: Exception) {
-                        Toast.makeText(context, "Install failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Install failed: ${e.message}", Toast.LENGTH_SHORT)
+                            .show()
                         // Fallback to legacy method for older devices
                         //installUsingLegacyMethod(context, apkFile)
                     }
                 } else {
+                    Log.d("DownloadReceiver", "APK file not found: $receivedDownloadId")
                     Toast.makeText(context, "APK file not found", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -120,7 +125,8 @@ class DownloadService : Service() {
     @SuppressLint("RequestInstallPackagesPolicy")
     private fun installUsingPackageInstaller(context: Context, apkFile: File) {
         val packageInstaller = context.packageManager.packageInstaller
-        val sessionParams = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
+        val sessionParams =
+            PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
 
         // Create installation session
         val sessionId = packageInstaller.createSession(sessionParams)

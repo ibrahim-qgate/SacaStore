@@ -1,6 +1,6 @@
 package ae.tii.saca_store.util
 
-import ae.tii.saca_store.data.remote.App
+import ae.tii.saca_store.data.dtos.App
 import ae.tii.saca_store.domain.AppInfo
 
 

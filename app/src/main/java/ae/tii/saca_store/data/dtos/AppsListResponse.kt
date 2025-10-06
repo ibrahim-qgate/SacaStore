@@ -1,4 +1,4 @@
-package ae.tii.saca_store.data.remote
+package ae.tii.saca_store.data.dtos
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

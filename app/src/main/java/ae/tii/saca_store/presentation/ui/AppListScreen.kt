@@ -33,7 +33,9 @@ fun AppListScreen(viewModel: AppViewModel) {
         is AppListUiState.Success -> {
             LazyColumn {
                 items((uiState as AppListUiState.Success).apps) { app ->
-                    AppListItem(app)
+                    AppListItem(app) {
+                        viewModel.startDownload(it)
+                    }
                 }
             }
         }

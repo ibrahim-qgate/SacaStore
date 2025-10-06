@@ -1,5 +1,6 @@
 package ae.tii.saca_store.data.remote
 
+import ae.tii.saca_store.data.dtos.AppsListResponse
 import retrofit2.Response
 import retrofit2.http.GET
 
