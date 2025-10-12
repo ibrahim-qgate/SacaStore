@@ -7,7 +7,7 @@ import ae.tii.saca_store.util.NetworkResponse
 import ae.tii.saca_store.util.toDomain
 
 class AppRepositoryImpl(private val apiService: ApiService) : IAppRepository {
-    override suspend fun getAppList(): NetworkResponse<List<AppInfo>> {
+    override suspend fun getAppListResponse(): NetworkResponse<List<AppInfo>> {
         return try {
             val response = apiService.getAppsList()
 

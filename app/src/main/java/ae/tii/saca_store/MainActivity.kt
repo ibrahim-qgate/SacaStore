@@ -82,7 +82,8 @@ class MainActivity : AppCompatActivity() {
                     if (apkFile != null && apkFile.exists()) {
                         Log.i(TAG, "Download complete, installing silently...")
                         binding.tvStatus.text = getString(R.string.installing)
-                        val result = withContext(Dispatchers.IO) { installWithPackageInstaller(apkFile) }
+                        val result =
+                            withContext(Dispatchers.IO) { installWithPackageInstaller(apkFile) }
                         Log.i(TAG, "Install result code: $result")
                     } else {
                         Log.i(TAG, "apkFile is null")
@@ -102,7 +103,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-//        checkInstallPermission()
+        checkInstallPermission()
     }
 
     private fun checkInstallPermission() {
@@ -119,14 +120,6 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun downloadApk(sourceUrl: String, destPath: String): File? {
-        /*val url = URL(sourceUrl)
-        val connection = url.openConnection() as HttpsURLConnection
-        connection.connect()
-
-        val file = File(destPath)
-        connection.inputStream.use { input ->
-            FileOutputStream(file).use { output -> input.copyTo(output) }
-        }*/
 
         val url = URL(sourceUrl)
         val conn = url.openConnection() as HttpURLConnection
@@ -142,7 +135,7 @@ class MainActivity : AppCompatActivity() {
         val file = File(filesDir, "outlook.apk")
 //        val file = File(destPath)
         file.parentFile?.mkdirs()
-        if(file.exists().not()){
+        if (file.exists().not()) {
             Log.i(TAG, "File Does not exists")
         }
         Log.i(TAG, "starting inputstream from conn to: ${file.absolutePath}")
@@ -152,8 +145,7 @@ class MainActivity : AppCompatActivity() {
                     input.copyTo(output)
                 }
             }
-        }
-        catch (e: Exception){
+        } catch (e: Exception) {
             Log.i(TAG, "Error while inputstream: $e")
         }
         conn.disconnect()
@@ -178,10 +170,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     @SuppressLint("RequestInstallPackagesPolicy")
-    private fun installWithPackageInstaller(apkFile: File){
+    private fun installWithPackageInstaller(apkFile: File) {
 
         val packageInstaller = packageManager.packageInstaller
-        val sessionParams = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
+        val sessionParams =
+            PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
 
         // Create installation session
         val sessionId = packageInstaller.createSession(sessionParams)
@@ -190,8 +183,12 @@ class MainActivity : AppCompatActivity() {
         try {
             // Write APK to session
             apkFile.inputStream().use { inputStream ->
-                session.openWrite("base.apk", 0, apkFile.length()).use { outputStream ->
-                    inputStream.copyTo(outputStream)
+                session.openWrite(apkFile.name, 0, -1).use { outputStream ->
+                    val buffer = ByteArray(1024 * 4)
+                    var bytesRead: Int
+                    while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                        outputStream.write(buffer, 0, bytesRead)
+                    }
                     session.fsync(outputStream)
                 }
             }

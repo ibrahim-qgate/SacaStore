@@ -5,6 +5,7 @@ import ae.tii.saca_store.domain.repos.IAppRepository
 import ae.tii.saca_store.domain.repos.IDownloadRepo
 import ae.tii.saca_store.presentation.ui.AppListUiState
 import ae.tii.saca_store.util.NetworkResponse
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -33,7 +34,8 @@ class AppViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = AppListUiState.Loading
             try {
-                val networkResponse = withContext(Dispatchers.IO) { repository.getAppList() }
+                val networkResponse =
+                    withContext(Dispatchers.IO) { repository.getAppListResponse() }
                 when (networkResponse) {
                     is NetworkResponse.Error -> {
                         _uiState.value =
@@ -41,9 +43,6 @@ class AppViewModel @Inject constructor(
                     }
 
                     is NetworkResponse.Success<*> -> {
-
-                        startAppsDownload(networkResponse.data as? List<AppInfo> ?: emptyList())
-
                         _uiState.value =
                             AppListUiState.Success(
                                 networkResponse.data as? List<AppInfo> ?: emptyList()
@@ -57,13 +56,11 @@ class AppViewModel @Inject constructor(
         }
     }
 
-    fun startDownload(appInfo: AppInfo) {
-        downloadRepo.startDownload(appInfo)
-    }
-
-
-    private fun startAppsDownload(appsList: List<AppInfo>) {
-        appsList.forEach { downloadRepo.startDownload(it) }
+    fun startDownload(context: Context, appInfo: AppInfo) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val file = downloadRepo.downloadApkFile(context, appInfo)
+            file?.let { downloadRepo.installApkFile(context, it) }
+        }
     }
 
 }
