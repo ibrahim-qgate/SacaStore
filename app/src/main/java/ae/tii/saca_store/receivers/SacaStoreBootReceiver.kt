@@ -24,6 +24,6 @@ class SacaStoreBootReceiver : BroadcastReceiver() {
     }
 
     private fun startDownloadService(context: Context) {
-        DownloadService.start(context, withAction = DownloadService.ACTION_FETCH_POLICIES)
+        DownloadService.start(context, withAction = DownloadService.ACTION_BIND_TO_SACA_SERVICE)
     }
 }

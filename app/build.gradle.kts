@@ -21,11 +21,17 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "BASE_URL", "\"https://api.jsonbin.io/v3/\"")
+        buildConfigField("String", "SACA_SERVICE_PKG_NAME", "\"com.android.google.gce.gceservice\"")
+        buildConfigField(
+            "String",
+            "SACA_SERVICE_CLASS_NAME",
+            "\"com.android.google.gce.gceservice.SacaService\""
+        )
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = true
+            isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -54,6 +60,13 @@ android {
         buildConfig = true
         viewBinding = true
         compose = true
+        aidl = true
+    }
+
+    sourceSets {
+        getByName("main") {
+            aidl.srcDir("src/main/aidl")
+        }
     }
 }
 

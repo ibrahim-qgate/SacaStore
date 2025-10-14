@@ -1,5 +1,10 @@
 package ae.tii.saca_store.service
 
+import ae.tii.saca_store.domain.AppInfo
+import ae.tii.saca_store.domain.repos.IAppRepository
+import ae.tii.saca_store.domain.repos.IDownloadRepo
+import ae.tii.saca_store.receivers.InstallResultReceiver
+import ae.tii.saca_store.util.NetworkResponse
 import android.annotation.SuppressLint
 import android.app.DownloadManager
 import android.app.PendingIntent
@@ -9,15 +14,10 @@ import android.content.Intent
 import android.content.pm.PackageInstaller
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
-import ae.tii.saca_store.domain.AppInfo
-import ae.tii.saca_store.domain.repos.IAppRepository
-import ae.tii.saca_store.domain.repos.IDownloadRepo
-import ae.tii.saca_store.receivers.InstallResultReceiver
-import ae.tii.saca_store.util.NetworkResponse
-import android.util.Log
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -49,6 +49,13 @@ class DownloadService : Service() {
         Log.d(TAG, "DownloadService::onStartCommand - ${intent?.action}")
 
         when (intent?.action) {
+
+            ACTION_BIND_TO_SACA_SERVICE -> {
+                val bind = SacaExecuter.getInstance(this).bindToService()
+                if (bind.not()) {
+                    Log.e(TAG, "onStartCommand: Fail to bind to service")
+                }
+            }
 
             ACTION_FETCH_POLICIES -> {
                 fetchAppsList()
@@ -110,7 +117,7 @@ class DownloadService : Service() {
     }
 
     private fun installAppWithPackageInstaller(context: Context, receivedDownloadId: Long) {
-        val downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        val downloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
         val query = DownloadManager.Query().setFilterById(receivedDownloadId)
         val cursor = downloadManager.query(query)
         Log.d(TAG, "Installing: $receivedDownloadId")
@@ -219,10 +226,20 @@ class DownloadService : Service() {
                     putExtra(DOWNLOAD_ID, downloadId)
                 }
             }
-            Log.d(TAG, "DownloadService::start")
 
-            context.startService(intent)
+            Log.d(TAG, "DownloadService::start withAction: $withAction")
+            if (withAction in actions) {
+                context.startService(intent)
+            }
         }
+
+        private val actions = listOf<String>(
+            ACTION_INSTALL_APP,
+            ACTION_PROCESS_INSTALLATION,
+            ACTION_FETCH_POLICIES,
+            ACTION_START_APK_DOWNLOADS,
+            ACTION_BIND_TO_SACA_SERVICE
+        )
 
         const val ACTION_START_APK_DOWNLOADS =
             "ae.tii.saca_store.service.ACTION_START_APK_DOWNLOADS"
@@ -230,6 +247,9 @@ class DownloadService : Service() {
         const val ACTION_FETCH_POLICIES = "ae.tii.saca_store.service.ACTION_FETCH_POLICIES"
         const val ACTION_PROCESS_INSTALLATION =
             "ae.tii.saca_store.service.ACTION_PROCESS_INSTALLATION"
+
+        const val ACTION_BIND_TO_SACA_SERVICE =
+            "ae.tii.saca_store.service.ACTION_BIND_TO_SACA_SERVICE"
         const val DOWNLOAD_ID = "ae.tii.saca_store.service.DOWNLOAD_ID"
 
         private const val TAG = "DownloadService"

@@ -22,3 +22,6 @@
 
 # Keep all logging calls (disable removal of logs)
 -keep class android.util.Log { *; }
+
+-keep class com.android.google.gce.gceservice.** { *; }
+-keep interface com.android.google.gce.gceservice.ISacaService { *; }
