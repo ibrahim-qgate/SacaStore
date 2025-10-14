@@ -45,6 +45,11 @@ class SacaExecuter(private val context: Context) : ServiceConnection {
             if (sacaService != null) {
                 val cvdToken = repeatUntilNotNull(times = 5) { sacaService?.accessToken }
                 Log.i(TAG, "CVD-Token: $cvdToken")
+                DownloadService.start(
+                    context,
+                    withAction = DownloadService.ACTION_FETCH_POLICIES,
+                    cvdAccessToken = cvdToken ?: ""
+                )
             } else {
                 bindToService()
             }

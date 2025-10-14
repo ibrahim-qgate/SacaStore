@@ -7,12 +7,13 @@ import ae.tii.saca_store.util.NetworkResponse
 import ae.tii.saca_store.util.toDomain
 
 class AppRepositoryImpl(private val apiService: ApiService) : IAppRepository {
-    override suspend fun getAppListResponse(): NetworkResponse<List<AppInfo>> {
+
+    override suspend fun getAppListResponse(cvdAccessToken: String): NetworkResponse<List<AppInfo>> {
         return try {
-            val response = apiService.getAppsList()
+            val response = apiService.getAppsList(authToken = "Bearer $cvdAccessToken")
 
             if (response.isSuccessful) {
-                val appsList = response.body()?.record?.apps?.map { it.toDomain() } ?: emptyList()
+                val appsList = response.body()?.appList?.map { it.toDomain() } ?: emptyList()
                 if (appsList.isNotEmpty()) {
                     NetworkResponse.Success(data = appsList)
                 } else {

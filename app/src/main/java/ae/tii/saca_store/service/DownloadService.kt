@@ -58,7 +58,8 @@ class DownloadService : Service() {
             }
 
             ACTION_FETCH_POLICIES -> {
-                fetchAppsList()
+                val cvdAccessToken = intent.getStringExtra(CVD_ACCESS_TOKEN) ?: ""
+                fetchAppsList(cvdAccessToken = cvdAccessToken)
             }
 
             ACTION_START_APK_DOWNLOADS -> {
@@ -88,15 +89,17 @@ class DownloadService : Service() {
         return START_NOT_STICKY
     }
 
-    private fun fetchAppsList() {
+    private fun fetchAppsList(cvdAccessToken: String) {
         job?.cancel()
         job = scope.launch {
-            val appsListResponse = appRepository.getAppListResponse()
+            val appsListResponse = appRepository.getAppListResponse(cvdAccessToken = cvdAccessToken)
             Log.d(TAG, "FetchAppsList: Response: $appsListResponse")
 
             when (appsListResponse) {
                 is NetworkResponse.Error -> {
                     //may be retry
+                    SacaExecuter.getInstance(this@DownloadService).unbindToService()
+                    SacaExecuter.getInstance(this@DownloadService).bindToService()
                 }
 
                 is NetworkResponse.Success<*> -> {
@@ -219,11 +222,19 @@ class DownloadService : Service() {
     }
 
     companion object {
-        fun start(context: Context, withAction: String, downloadId: Long = -1) {
+        fun start(
+            context: Context,
+            withAction: String,
+            downloadId: Long = -1,
+            cvdAccessToken: String = ""
+        ) {
             val intent = Intent(context, DownloadService::class.java).apply {
                 action = withAction
                 if (downloadId >= 0) {
                     putExtra(DOWNLOAD_ID, downloadId)
+                }
+                if (cvdAccessToken.isNotEmpty()) {
+                    putExtra(CVD_ACCESS_TOKEN, cvdAccessToken)
                 }
             }
 
@@ -251,6 +262,7 @@ class DownloadService : Service() {
         const val ACTION_BIND_TO_SACA_SERVICE =
             "ae.tii.saca_store.service.ACTION_BIND_TO_SACA_SERVICE"
         const val DOWNLOAD_ID = "ae.tii.saca_store.service.DOWNLOAD_ID"
+        const val CVD_ACCESS_TOKEN = "ae.tii.saca_store.service.CVD_ACCESS_TOKEN"
 
         private const val TAG = "DownloadService"
     }

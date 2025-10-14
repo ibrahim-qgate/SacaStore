@@ -20,7 +20,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "BASE_URL", "\"https://api.jsonbin.io/v3/\"")
+        buildConfigField("String", "BASE_URL", "\"https://admin.dev.azure-dev.androidinthecloud.net/\"")
         buildConfigField("String", "SACA_SERVICE_PKG_NAME", "\"com.android.google.gce.gceservice\"")
         buildConfigField(
             "String",

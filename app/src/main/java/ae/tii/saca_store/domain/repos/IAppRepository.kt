@@ -4,5 +4,5 @@ import ae.tii.saca_store.domain.AppInfo
 import ae.tii.saca_store.util.NetworkResponse
 
 interface IAppRepository {
-    suspend fun getAppListResponse(): NetworkResponse<List<AppInfo>>
+    suspend fun getAppListResponse(cvdAccessToken: String): NetworkResponse<List<AppInfo>>
 }

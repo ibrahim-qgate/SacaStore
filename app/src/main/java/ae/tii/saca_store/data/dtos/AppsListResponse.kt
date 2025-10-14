@@ -6,46 +6,26 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class AppsListResponse(
-    /*@SerialName("metadata")
-    val metadata: Metadata?,*/
-    @SerialName("record")
-    val record: Record?
-)
-
-/*@Serializable
-data class Metadata(
-    @SerialName("createdAt")
-    val createdAt: String?,
-    @SerialName("id")
-    val id: String?,
-    @SerialName("name")
-    val name: String?,
-    @SerialName("private")
-    val `private`: Boolean?
-)*/
-
-@Serializable
-data class Record(
-    @SerialName("apps")
-    val apps: List<App>? = emptyList()
+    @SerialName("Status") var status: Boolean? = null,
+    @SerialName("AppList") var appList: ArrayList<App> = arrayListOf()
 )
 
 @Serializable
 data class App(
     @SerialName("abi")
-    val abi: String?,
+    val abi: String? = null,
     @SerialName("description")
-    val description: String?,
+    val description: String? = null,
     @SerialName("downloadUrl")
-    val downloadUrl: String?,
+    val downloadUrl: String? = null,
     @SerialName("iconUrl")
-    val iconUrl: String?,
+    val iconUrl: String? = null,
     @SerialName("name")
-    val name: String?,
+    val name: String? = null,
     @SerialName("packageName")
-    val packageName: String?,
+    val packageName: String? = null,
     @SerialName("version")
-    val version: String?
+    val version: String? = null
 )
 
 

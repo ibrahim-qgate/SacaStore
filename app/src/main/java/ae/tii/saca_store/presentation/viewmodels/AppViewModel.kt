@@ -35,7 +35,7 @@ class AppViewModel @Inject constructor(
             _uiState.value = AppListUiState.Loading
             try {
                 val networkResponse =
-                    withContext(Dispatchers.IO) { repository.getAppListResponse() }
+                    withContext(Dispatchers.IO) { repository.getAppListResponse(cvdAccessToken = "") }
                 when (networkResponse) {
                     is NetworkResponse.Error -> {
                         _uiState.value =
