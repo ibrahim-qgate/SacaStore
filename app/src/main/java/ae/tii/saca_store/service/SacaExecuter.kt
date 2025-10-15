@@ -32,8 +32,13 @@ class SacaExecuter @Inject constructor(
     }
 
     fun unbindToService() {
-        context.unbindService(this)
-        sacaService = null
+        try {
+            context.unbindService(this)
+            sacaService = null
+        } catch (e: Exception) {
+            Log.e(TAG, "Error: unbindTo SACA Service: ${e.localizedMessage}", )
+            sacaService = null
+        }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)

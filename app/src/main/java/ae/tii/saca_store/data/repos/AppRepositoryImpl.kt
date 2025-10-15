@@ -49,7 +49,7 @@ class AppRepositoryImpl(private val apiService: ApiService) : IAppRepository {
                 packageName = "com.microsoft.teams.x86_64",
                 version = "2.0.0",
                 downloadUrl = "https://github.com/ibrahim-qgate/host_apk/releases/download/teams/microsoft_teams_minAPI26-arm64-v8a-nodpi.apk",
-                abi = "x86_64"
+                abi = "arm64-v8a"
             )
         )
         return appList

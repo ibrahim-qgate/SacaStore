@@ -22,6 +22,7 @@ class DownloadRepoImpl(
 ) : IDownloadRepo {
 
     private val apkUriQueue = ConcurrentLinkedQueue<Uri>()
+    private val downloadIds = ConcurrentLinkedQueue<Long>()
 
     companion object {
         private const val TAG = "DownloadRepoImpl"
@@ -53,7 +54,7 @@ class DownloadRepoImpl(
 
         val downloadId = downloadManager.enqueue(request)
         Log.d(TAG, "Download Started: $downloadId")
-
+        downloadIds.add(downloadId)
         return downloadId
     }
 
@@ -68,6 +69,7 @@ class DownloadRepoImpl(
         val session = packageInstaller.openSession(sessionId)
 
         try {
+            Log.d(TAG, "installApkFile: ${apkFile.name}")
             // Write APK to session
             apkFile.inputStream().use { inputStream ->
                 session.openWrite(apkFile.name, 0, -1).use { outputStream ->
@@ -119,6 +121,7 @@ class DownloadRepoImpl(
                 } else null
             }
             uri?.let { apkUriQueue.add(it) }
+            Log.d(TAG, "getDownloadedFileUri: $uri")
             uri
         } catch (e: Exception) {
             Log.e(TAG, "Error getting Uri of downloaded file $downloadId: ${e.localizedMessage}")
@@ -126,13 +129,20 @@ class DownloadRepoImpl(
         }
     }
 
-    override fun installNext(context: Context) {
+    override fun installNext(context: Context, downloadId: Long) {
         synchronized(this) {
             val apkUri = apkUriQueue.poll()
+            Log.d(TAG, "downloadIds: before ${downloadIds.joinToString()}")
+            downloadIds.remove(downloadId)
+            Log.d(TAG, "downloadIds: after ${downloadIds.joinToString()}")
             apkUri?.let { uri ->
                 val apkFile = File(uri.path ?: "")
                 installApkFile(context, apkFile)
             }
         }
+    }
+
+    override fun getPendingDownloadIds(): ConcurrentLinkedQueue<Long> {
+        return downloadIds
     }
 }

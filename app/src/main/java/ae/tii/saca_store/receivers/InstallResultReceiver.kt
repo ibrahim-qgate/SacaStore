@@ -78,6 +78,8 @@ class InstallResultReceiver : BroadcastReceiver() {
                 Log.e(TAG, "onReceive: Unknown installation status $status")
             }
         }
+
+        DownloadService.start(context, withAction = DownloadService.ACTION_PROCESS_INSTALLATION)
     }
 
     private fun deleteFile(fileUri: String) {

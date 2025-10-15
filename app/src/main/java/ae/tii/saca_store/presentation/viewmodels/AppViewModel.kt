@@ -4,8 +4,10 @@ import ae.tii.saca_store.domain.AppInfo
 import ae.tii.saca_store.domain.repos.IAppRepository
 import ae.tii.saca_store.domain.repos.IDownloadRepo
 import ae.tii.saca_store.presentation.ui.AppListUiState
+import ae.tii.saca_store.service.DownloadService
 import ae.tii.saca_store.service.SacaExecuter
 import ae.tii.saca_store.util.NetworkResponse
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -59,9 +61,14 @@ class AppViewModel @Inject constructor(
         }
     }
 
-    fun startDownload(appInfo: AppInfo) {
+    fun startDownload(context: Context, appInfo: AppInfo) {
         viewModelScope.launch(Dispatchers.IO) {
-            downloadRepo.startDownload(appInfo)
+//            downloadRepo.startDownload(appInfo)
+            DownloadService.start(
+                context.applicationContext,
+                withAction = DownloadService.ACTION_SINGLE_APP_DOWNLOAD,
+                singleAppDownload = appInfo
+            )
         }
     }
 
