@@ -35,4 +35,23 @@ class AppRepositoryImpl(private val apiService: ApiService) : IAppRepository {
             NetworkResponse.Error(error = e.localizedMessage ?: "Unexpected error")
         }
     }
+
+    private fun getDummyList(): List<AppInfo> {
+        val appList = listOf(
+            AppInfo(
+                name = "Outlook",
+                packageName = "com.outlook.app",
+                version = "2.0.0",
+                downloadUrl = "https://github.com/ibrahim-qgate/host_apk/releases/download/teams/microsoft_outlook_minAPI28-universal-nodpi_.apk",
+                abi = "universal"
+            ), AppInfo(
+                name = "Microsoft Teams",
+                packageName = "com.microsoft.teams.x86_64",
+                version = "2.0.0",
+                downloadUrl = "https://github.com/ibrahim-qgate/host_apk/releases/download/teams/microsoft_teams_minAPI26-arm64-v8a-nodpi.apk",
+                abi = "x86_64"
+            )
+        )
+        return appList
+    }
 }

@@ -4,8 +4,8 @@ import ae.tii.saca_store.domain.AppInfo
 import ae.tii.saca_store.domain.repos.IAppRepository
 import ae.tii.saca_store.domain.repos.IDownloadRepo
 import ae.tii.saca_store.presentation.ui.AppListUiState
+import ae.tii.saca_store.service.SacaExecuter
 import ae.tii.saca_store.util.NetworkResponse
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,6 +19,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AppViewModel @Inject constructor(
+    private val sacaExecuter: SacaExecuter,
     private val repository: IAppRepository,
     private val downloadRepo: IDownloadRepo
 ) : ViewModel() {
@@ -34,8 +35,10 @@ class AppViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = AppListUiState.Loading
             try {
-                val networkResponse =
-                    withContext(Dispatchers.IO) { repository.getAppListResponse(cvdAccessToken = "") }
+                val networkResponse = withContext(Dispatchers.IO) {
+                    val cvdToken = sacaExecuter.getCvdAccessToken()
+                    repository.getAppListResponse(cvdAccessToken = cvdToken)
+                }
                 when (networkResponse) {
                     is NetworkResponse.Error -> {
                         _uiState.value =
@@ -56,11 +59,15 @@ class AppViewModel @Inject constructor(
         }
     }
 
-    fun startDownload(context: Context, appInfo: AppInfo) {
+    fun startDownload(appInfo: AppInfo) {
         viewModelScope.launch(Dispatchers.IO) {
-            val file = downloadRepo.downloadApkFile(context, appInfo)
-            file?.let { downloadRepo.installApkFile(context, it) }
+            downloadRepo.startDownload(appInfo)
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        sacaExecuter.unbindToService()
     }
 
 }

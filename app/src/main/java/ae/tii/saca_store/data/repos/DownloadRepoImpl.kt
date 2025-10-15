@@ -15,14 +15,13 @@ import android.os.Environment
 import android.util.Log
 import androidx.core.net.toUri
 import java.io.File
-import java.io.FileOutputStream
-import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
+import java.util.concurrent.ConcurrentLinkedQueue
 
 class DownloadRepoImpl(
     context: Context
 ) : IDownloadRepo {
+
+    private val apkUriQueue = ConcurrentLinkedQueue<Uri>()
 
     companion object {
         private const val TAG = "DownloadRepoImpl"
@@ -47,7 +46,7 @@ class DownloadRepoImpl(
         val request = DownloadManager.Request(app.downloadUrl.toUri())
             .setTitle(app.name)
             .setDescription("Downloading ${app.name}")
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN)
             .setAllowedOverMetered(true)
             .setAllowedOverRoaming(false)
             .setDestinationUri(Uri.fromFile(apkFile))
@@ -58,46 +57,8 @@ class DownloadRepoImpl(
         return downloadId
     }
 
-    override suspend fun downloadApkFile(context: Context, appInfo: AppInfo): File? {
-        val url = URL(appInfo.downloadUrl)
-        val conn = url.openConnection() as HttpURLConnection
-        conn.instanceFollowRedirects = true // follow GitHub redirects
-        conn.requestMethod = "GET"
-        conn.setRequestProperty("User-Agent", "Mozilla/5.0") // GitHub requires User-Agent
-        conn.connectTimeout = 15000
-        conn.readTimeout = 15000
-
-        if (conn.responseCode !in 200..299) {
-            throw IOException("Failed to download file: HTTP ${conn.responseCode}")
-        }
-        val file = File(context.filesDir, "${appInfo.packageName}.apk")
-//        val file = File(destPath)
-        file.parentFile?.mkdirs()
-
-        Log.i(TAG, "starting inputstream from conn to: ${file.absolutePath}")
-        try {
-            conn.inputStream.use { input ->
-                FileOutputStream(file).use { output ->
-                    input.copyTo(output)
-                }
-            }
-            conn.disconnect()
-        } catch (e: Exception) {
-            conn.disconnect()
-            Log.i(TAG, "Error while inputstream: $e")
-            return null
-        }
-
-        Log.i(TAG, "File downloaded: file-path ${file.absolutePath}")
-        return file
-    }
-
     @SuppressLint("RequestInstallPackagesPolicy")
-    override fun installApkFile(
-        context: Context,
-        apkFile: File,
-        singleApk: Boolean
-    ) {
+    private fun installApkFile(context: Context, apkFile: File) {
         val packageInstaller = context.packageManager.packageInstaller
         val sessionParams =
             PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
@@ -124,7 +85,6 @@ class DownloadRepoImpl(
                 action = "INSTALL_COMPLETE"
                 putExtra(InstallResultReceiver.SESSION_ID, sessionId)
                 putExtra(InstallResultReceiver.FILE_URI, apkFile.toUri().toString())
-                putExtra(InstallResultReceiver.SINGLE_APK_INSTALL, singleApk)
             }
 
             val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -143,7 +103,36 @@ class DownloadRepoImpl(
 
         } catch (e: Exception) {
             session.abandon()
-            Log.i(TAG, "Error Installing App $e")
+            Log.e(TAG, "Error Installing App $e")
+        }
+    }
+
+    override fun getDownloadedFileUri(downloadId: Long): Uri? {
+        return try {
+            val query = DownloadManager.Query().setFilterById(downloadId)
+            val cursor = downloadManager.query(query)
+            val uri = cursor?.use {
+                if (it.moveToFirst()) {
+                    val columnIndex = it.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI)
+                    val fileUri = it.getString(columnIndex)
+                    fileUri?.toUri()
+                } else null
+            }
+            uri?.let { apkUriQueue.add(it) }
+            uri
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting Uri of downloaded file $downloadId: ${e.localizedMessage}")
+            null
+        }
+    }
+
+    override fun installNext(context: Context) {
+        synchronized(this) {
+            val apkUri = apkUriQueue.poll()
+            apkUri?.let { uri ->
+                val apkFile = File(uri.path ?: "")
+                installApkFile(context, apkFile)
+            }
         }
     }
 }
