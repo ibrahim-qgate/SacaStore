@@ -79,7 +79,7 @@ class InstallResultReceiver : BroadcastReceiver() {
             }
         }
 
-        DownloadService.start(context, withAction = DownloadService.ACTION_PROCESS_INSTALLATION)
+       // DownloadService.start(context, withAction = DownloadService.ACTION_PROCESS_INSTALLATION)
     }
 
     private fun deleteFile(fileUri: String) {

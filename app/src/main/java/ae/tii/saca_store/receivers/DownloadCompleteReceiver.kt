@@ -1,11 +1,16 @@
 package ae.tii.saca_store.receivers
 
 import ae.tii.saca_store.service.DownloadService
+import ae.tii.saca_store.worker.ApkInstallWorker
 import android.app.DownloadManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 
 
 class DownloadCompleteReceiver : BroadcastReceiver() {
@@ -15,11 +20,16 @@ class DownloadCompleteReceiver : BroadcastReceiver() {
         if (intent.action == DownloadManager.ACTION_DOWNLOAD_COMPLETE) {
             Log.d("DownloadReceiver", "Download Success: $downloadId")
             // Start service to handle installation
-            DownloadService.start(
-                context,
-                withAction = DownloadService.ACTION_DOWNLOAD_COMPLETED,
-                downloadId = downloadId
+            val work = OneTimeWorkRequestBuilder<ApkInstallWorker>()
+                .setInputData(workDataOf(ApkInstallWorker.DOWNLOAD_ID to downloadId))
+                .build()
+
+            WorkManager.getInstance(context).enqueueUniqueWork(
+                "apk_install_queue",
+                ExistingWorkPolicy.APPEND,
+                work
             )
+
         } else {
             Log.d(
                 "DownloadReceiver",

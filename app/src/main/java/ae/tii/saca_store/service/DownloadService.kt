@@ -17,12 +17,12 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import androidx.core.content.ContextCompat
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -49,15 +49,8 @@ class DownloadService : Service() {
 
     override fun onBind(p0: Intent?): IBinder? = null
 
-    override fun onCreate() {
-        super.onCreate()
-        createNotificationChannel()
-    }
-
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         Log.d(TAG, "DownloadService::onStartCommand - ${intent.action}")
-        val notification = getNotification()
-        startForeground(1, notification)
 
         when (intent.action) {
             ACTION_SINGLE_APP_DOWNLOAD -> {
@@ -65,7 +58,7 @@ class DownloadService : Service() {
                 val appInfo = appInfoJson?.let { Json.decodeFromString<AppInfo>(it) }
                 appInfo?.let {
                     Log.d(TAG, "start downloading: ${it.name}")
-                    downloadRepo.startDownload(it)
+//                    downloadRepo.startDownload(it)
                 }
             }
 
@@ -83,16 +76,17 @@ class DownloadService : Service() {
     }
 
     private fun checkForPendingDownloads() {
-        if (downloadRepo.getPendingDownloadIds().isEmpty()) {
-            stopForeground(STOP_FOREGROUND_REMOVE)
-            stopSelf()
-        }
+//        if (downloadRepo.getPendingDownloadIds().isEmpty()) {
+//            stopForeground(STOP_FOREGROUND_REMOVE)
+//            stopSelf()
+//        }
     }
 
     private fun getCvdAccessToken() {
         tokenJob?.cancel()
         tokenJob = scope.launch {
             val cvdToken = withContext(Dispatchers.IO) { sacaExecuter.getCvdAccessToken() }
+            Log.d(TAG, "getCvdAccessToken: $cvdToken")
             fetchAppsList(cvdAccessToken = cvdToken)
         }
     }
@@ -121,9 +115,10 @@ class DownloadService : Service() {
         }
     }
 
-    private fun startDownloading(appsList: List<AppInfo>) {
+    private suspend fun startDownloading(appsList: List<AppInfo>) {
         appsList.filter { it.downloadUrl.isNotEmpty() }.forEach { app ->
-            downloadRepo.startDownload(app)
+            delay(300)
+            val downloadId = downloadRepo.startDownload(app)
         }
     }
 
@@ -189,12 +184,7 @@ class DownloadService : Service() {
             Log.d(TAG, "DownloadService::start withAction: $withAction")
             //starting service for one of the pre-defined actions.
             if (withAction in actions) {
-                try {
-                    ContextCompat.startForegroundService(context, intent)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error starting: ${e.localizedMessage}")
-                    context.startService(intent)
-                }
+                context.startService(intent)
             }
         }
 

@@ -96,6 +96,9 @@ dependencies {
     ksp(libs.hilt.android.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
 
+    //work manager
+    implementation(libs.androidx.work.runtime.ktx)
+
     //coil - image loading library
     implementation(libs.coil.compose)
 

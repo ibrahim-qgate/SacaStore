@@ -6,7 +6,7 @@ import android.net.Uri
 import java.util.concurrent.ConcurrentLinkedQueue
 
 interface IDownloadRepo {
-    fun startDownload(app: AppInfo): Long
+    suspend fun startDownload(app: AppInfo): Long
     fun getDownloadedFileUri(downloadId: Long): Uri?
     fun installNext(context: Context, downloadId: Long)
     fun getPendingDownloadIds(): ConcurrentLinkedQueue<Long>

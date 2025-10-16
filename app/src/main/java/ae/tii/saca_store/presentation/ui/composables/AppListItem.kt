@@ -88,7 +88,9 @@ fun AppListItem(app: AppInfo, onDownloadClick: (AppInfo) -> Unit) {
             }
 
             // Download Button
-            IconButton(onClick = { onDownloadClick.invoke(app) }) {
+            DebouncedIconButton(
+                debounceMillis = 2000L,
+                onClick = { onDownloadClick.invoke(app) }) {
                 Icon(
                     painter = painterResource(R.drawable.download),
                     contentDescription = "Download",

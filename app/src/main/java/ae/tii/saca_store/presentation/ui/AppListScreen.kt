@@ -27,7 +27,6 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun AppListScreen(viewModel: AppViewModel) {
     val uiState by viewModel.uiState.collectAsState()
-    val context = LocalContext.current
 
     when (uiState) {
         is AppListUiState.Loading -> {
@@ -57,7 +56,7 @@ fun AppListScreen(viewModel: AppViewModel) {
                 ) {
                     items(apps) { app ->
                         AppListItem(app) {
-                            viewModel.startDownload(context, it)
+                            viewModel.startDownload(it)
                         }
                     }
                 }

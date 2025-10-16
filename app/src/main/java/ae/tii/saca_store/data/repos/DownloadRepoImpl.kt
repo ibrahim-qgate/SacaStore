@@ -35,13 +35,14 @@ class DownloadRepoImpl(
         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
 
 
-    override fun startDownload(app: AppInfo): Long {
+    override suspend fun startDownload(app: AppInfo): Long {
 
         val apkFile = File(downloadsDir, "${app.packageName}.apk")
 
         // Delete existing file if it exists
         if (apkFile.exists()) {
-            apkFile.delete()
+            Log.i(TAG, "Already downloaded or downloading: ${app.packageName}")
+            return -1
         }
 
         val request = DownloadManager.Request(app.downloadUrl.toUri())
@@ -50,7 +51,11 @@ class DownloadRepoImpl(
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN)
             .setAllowedOverMetered(true)
             .setAllowedOverRoaming(false)
-            .setDestinationUri(Uri.fromFile(apkFile))
+            .setDestinationInExternalPublicDir(
+                Environment.DIRECTORY_DOWNLOADS,
+                "${app.packageName}.apk"
+            )
+//            .setDestinationUri(Uri.fromFile(apkFile))
 
         val downloadId = downloadManager.enqueue(request)
         Log.d(TAG, "Download Started: $downloadId")
