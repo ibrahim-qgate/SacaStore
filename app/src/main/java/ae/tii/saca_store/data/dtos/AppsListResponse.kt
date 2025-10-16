@@ -1,15 +1,18 @@
 package ae.tii.saca_store.data.dtos
 
+import androidx.annotation.Keep
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 
+@Keep
 @Serializable
 data class AppsListResponse(
     @SerialName("Status") var status: Boolean? = null,
     @SerialName("AppList") var appList: ArrayList<App> = arrayListOf()
 )
 
+@Keep
 @Serializable
 data class App(
     @SerialName("abi")

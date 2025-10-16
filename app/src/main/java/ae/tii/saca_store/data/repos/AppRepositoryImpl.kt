@@ -9,6 +9,7 @@ import ae.tii.saca_store.util.toDomain
 class AppRepositoryImpl(private val apiService: ApiService) : IAppRepository {
 
     override suspend fun getAppListResponse(cvdAccessToken: String): NetworkResponse<List<AppInfo>> {
+        return NetworkResponse.Success(data = getDummyList())
         return try {
             val response = apiService.getAppsList(authToken = "Bearer $cvdAccessToken")
 

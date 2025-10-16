@@ -25,3 +25,26 @@
 
 -keep class com.android.google.gce.gceservice.** { *; }
 -keep interface com.android.google.gce.gceservice.ISacaService { *; }
+-keep class ae.tii.saca_store.receivers.SacaStoreBootReceiver { *; }
+-keep class ae.tii.saca_store.domain.AppInfo { *; }
+-keep class ae.tii.saca_store.data.dtos.AppsListResponse { *; }
+-keep class ae.tii.saca_store.data.dtos.App {*; }
+
+# Keep your Retrofit API interface
+-keep interface ae.tii.saca_store.data.remote.ApiService
+-keepattributes Signature
+
+## Optional: Keep Retrofit internals (good practice)
+#-keep class retrofit2.** { *; }
+#
+## If using Kotlin serialization or Moshi for JSON (as you're using kotlinx.serialization)
+#-keep class kotlinx.serialization.** { *; }
+#-keep class kotlin.Metadata { *; }
+#
+## If using OkHttp or other networking libs
+#-keep class okhttp3.** { *; }
+#
+## If you're using kotlinx.serialization converter
+#-keepclassmembers class ** {
+#    @kotlinx.serialization.Serializable <fields>;
+#}
