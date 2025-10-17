@@ -22,6 +22,8 @@
         tools:ignore="ProtectedPermissions" />
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
+
 
     <queries>
         <package android:name="com.android.google.gce.gceservice" />
@@ -70,10 +72,9 @@
         <receiver
             android:name=".receivers.InstallResultReceiver"
             android:enabled="true"
-            android:exported="false"
-            android:permission="${applicationId}.permission.INSTALL_RECEIVER">
+            android:exported="false">
             <intent-filter>
-                <action android:name="INSTALL_COMPLETE" />
+                <action android:name="ae.tii.saca_store.action.INSTALL_COMPLETE" />
             </intent-filter>
         </receiver>
 

@@ -1,9 +1,11 @@
 package ae.tii.saca_store.domain
 
+import androidx.annotation.Keep
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+@Keep
 data class AppInfo(
     @SerialName("name") val name: String,
     @SerialName("packageName") val packageName: String,

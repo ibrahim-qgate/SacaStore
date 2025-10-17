@@ -1,31 +1,31 @@
 package ae.tii.saca_store.service
 
+import ae.tii.saca_store.R
 import ae.tii.saca_store.domain.AppInfo
 import ae.tii.saca_store.domain.repos.IAppRepository
 import ae.tii.saca_store.domain.repos.IDownloadRepo
-import ae.tii.saca_store.receivers.InstallResultReceiver
+import ae.tii.saca_store.presentation.ui.AppListActivity
 import ae.tii.saca_store.util.NetworkResponse
-import android.annotation.SuppressLint
-import android.app.DownloadManager
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageInstaller
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
-import android.widget.Toast
-import androidx.core.content.FileProvider
-import androidx.core.net.toUri
+import androidx.core.app.NotificationCompat
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.io.File
-import java.io.IOException
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -38,187 +38,130 @@ class DownloadService : Service() {
     @Inject
     lateinit var downloadRepo: IDownloadRepo
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private var job: Job? = null
+    @Inject
+    lateinit var sacaExecuter: SacaExecuter
 
-    private val downloadQueue = LinkedHashSet<AppInfo>()
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private var tokenJob: Job? = null
+    private val maxAttemptToFetchAppsList = 4
+    private var currentAttempt = 0
 
     override fun onBind(p0: Intent?): IBinder? = null
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d(TAG, "DownloadService::onStartCommand - ${intent?.action}")
+    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+        Log.d(TAG, "DownloadService::onStartCommand - ${intent.action}")
 
-        when (intent?.action) {
-
-            ACTION_BIND_TO_SACA_SERVICE -> {
-                val bind = SacaExecuter.getInstance(this).bindToService()
-                if (bind.not()) {
-                    Log.e(TAG, "onStartCommand: Fail to bind to service")
+        when (intent.action) {
+            ACTION_SINGLE_APP_DOWNLOAD -> {
+                val appInfoJson = intent.getStringExtra(SINGLE_APP_INFO)
+                val appInfo = appInfoJson?.let { Json.decodeFromString<AppInfo>(it) }
+                appInfo?.let {
+                    Log.d(TAG, "start downloading: ${it.name}")
+//                    downloadRepo.startDownload(it)
                 }
             }
 
-            ACTION_FETCH_POLICIES -> {
-                val cvdAccessToken = intent.getStringExtra(CVD_ACCESS_TOKEN) ?: ""
-                fetchAppsList(cvdAccessToken = cvdAccessToken)
-            }
-
-            ACTION_START_APK_DOWNLOADS -> {
-                if (downloadQueue.isNotEmpty()) {
-                    processQueue()
-                } else {
-                    stopSelf()
+            ACTION_GET_CVD_ACCESS_TOKEN -> getCvdAccessToken()
+            ACTION_DOWNLOAD_COMPLETED -> {
+                val downloadId = intent.getLongExtra(DOWNLOAD_ID, -1)
+                if (downloadId != -1L) {
+                    handleDownloadCompleted(downloadId)
                 }
             }
 
-            ACTION_INSTALL_APP -> {
-                val receivedDownloadId = intent.getLongExtra(DOWNLOAD_ID, -1)
-                if (receivedDownloadId != -1L) {
-                    installAppWithPackageInstaller(this, receivedDownloadId)
-                }
-            }
-
-            ACTION_PROCESS_INSTALLATION -> {
-                downloadQueue.firstOrNull()?.let { downloadQueue.remove(it) }
-                if (downloadQueue.isNotEmpty()) {
-                    processQueue()
-                } else {
-                    stopSelf()
-                }
-            }
+            ACTION_PROCESS_INSTALLATION -> checkForPendingDownloads()
         }
         return START_NOT_STICKY
     }
 
-    private fun fetchAppsList(cvdAccessToken: String) {
-        job?.cancel()
-        job = scope.launch {
-            val appsListResponse = appRepository.getAppListResponse(cvdAccessToken = cvdAccessToken)
-            Log.d(TAG, "FetchAppsList: Response: $appsListResponse")
+    private fun checkForPendingDownloads() {
+//        if (downloadRepo.getPendingDownloadIds().isEmpty()) {
+//            stopForeground(STOP_FOREGROUND_REMOVE)
+//            stopSelf()
+//        }
+    }
 
-            when (appsListResponse) {
-                is NetworkResponse.Error -> {
-                    //may be retry
-                    SacaExecuter.getInstance(this@DownloadService).unbindToService()
-                    SacaExecuter.getInstance(this@DownloadService).bindToService()
-                }
-
-                is NetworkResponse.Success<*> -> {
-                    val appsList = appsListResponse.data as? List<AppInfo> ?: emptyList()
-                    downloadQueue.addAll(appsList)
-                    processQueue()
-                }
-            }
+    private fun getCvdAccessToken() {
+        tokenJob?.cancel()
+        tokenJob = scope.launch {
+            val cvdToken = withContext(Dispatchers.IO) { sacaExecuter.getCvdAccessToken() }
+            Log.d(TAG, "getCvdAccessToken: $cvdToken")
+            fetchAppsList(cvdAccessToken = cvdToken)
         }
     }
 
-    private fun processQueue() {
-        scope.launch {
-            val appInfo = downloadQueue.firstOrNull()
-            val file = appInfo?.let { downloadRepo.downloadApkFile(this@DownloadService, it) }
-            file?.let { downloadRepo.installApkFile(this@DownloadService, it, false) }
-        }
-    }
-
-    private fun installAppWithPackageInstaller(context: Context, receivedDownloadId: Long) {
-        val downloadManager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
-        val query = DownloadManager.Query().setFilterById(receivedDownloadId)
-        val cursor = downloadManager.query(query)
-        Log.d(TAG, "Installing: $receivedDownloadId")
-
-        if (cursor.moveToFirst()) {
-            val columnIndex = cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI)
-            val fileUri = cursor.getString(columnIndex)
-
-            fileUri?.let {
-                val apkUri = fileUri.toUri()
-                val apkFile = File(apkUri.path ?: "")
-
-                if (apkFile.exists()) {
-                    try {
-//                        installUsingPackageInstaller(context, apkFile)
-                        downloadRepo.installApkFile(context, apkFile, false)
-                    } catch (e: Exception) {
-                        Log.d(TAG, "Install failed: ${e.message}")
-
-                        // Fallback to legacy method for older devices
-                        //installUsingLegacyMethod(context, apkFile)
-                    }
+    private suspend fun fetchAppsList(cvdAccessToken: String) {
+        val appsListResponse = appRepository.getAppListResponse(cvdAccessToken = cvdAccessToken)
+        Log.d(TAG, "FetchAppsList: Response: $appsListResponse")
+        when (appsListResponse) {
+            is NetworkResponse.Error -> {
+                //retry
+                ////get cvd access token first
+                ////then fetch app list
+                if (currentAttempt < maxAttemptToFetchAppsList) {
+                    currentAttempt++
+                    start(this, withAction = ACTION_GET_CVD_ACCESS_TOKEN)
                 } else {
-                    Log.d(TAG, "APK file not found: $receivedDownloadId")
-                }
-            }
-        }
-        cursor.close()
-    }
-
-    @SuppressLint("RequestInstallPackagesPolicy")
-    private fun installUsingPackageInstaller(context: Context, apkFile: File) {
-        val packageInstaller = context.packageManager.packageInstaller
-        val sessionParams =
-            PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
-
-        // Create installation session
-        val sessionId = packageInstaller.createSession(sessionParams)
-        val session = packageInstaller.openSession(sessionId)
-
-        try {
-            // Write APK to session
-            apkFile.inputStream().use { inputStream ->
-                session.openWrite(apkFile.name, 0, -1).use { outputStream ->
-                    val buffer = ByteArray(1024 * 4)
-                    var bytesRead: Int
-                    while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-                        outputStream.write(buffer, 0, bytesRead)
-                    }
-                    session.fsync(outputStream)
+                    Log.d(TAG, "Stopping service after $currentAttempt attempts")
+                    stopSelf()
                 }
             }
 
-            // Create PendingIntent with correct flags
-            val intent = Intent(context, InstallResultReceiver::class.java).apply {
-                action = "INSTALL_COMPLETE"
-                putExtra("sessionId", sessionId)
-                putExtra("fileUri", apkFile.toUri().toString())
+            is NetworkResponse.Success<*> -> {
+                val appsList = appsListResponse.data as? List<AppInfo> ?: emptyList()
+                startDownloading(appsList)
             }
-
-            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
-            } else {
-                PendingIntent.FLAG_UPDATE_CURRENT
-            }
-
-            val pendingIntent = PendingIntent.getBroadcast(
-                context, sessionId, intent, flags
-            )
-
-            // Commit the session - THIS WILL TRIGGER THE INSTALL CONFIRMATION DIALOG
-            session.commit(pendingIntent.intentSender)
-            session.close()
-
-        } catch (e: IOException) {
-            session.abandon()
-            throw e
         }
     }
 
-
-    // Fallback method for older Android versions
-    private fun installUsingLegacyMethod(context: Context, apkFile: File) {
-        try {
-            val apkUri = FileProvider.getUriForFile(
-                context, "${context.packageName}.provider", apkFile
-            )
-
-            val installIntent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(apkUri, "application/vnd.android.package-archive")
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-
-            context.startActivity(installIntent)
-        } catch (e: Exception) {
-            Toast.makeText(context, "Cannot install app: ${e.message}", Toast.LENGTH_SHORT).show()
+    private suspend fun startDownloading(appsList: List<AppInfo>) {
+        appsList.filter { it.downloadUrl.isNotEmpty() }.forEach { app ->
+            delay(300)
+            val downloadId = downloadRepo.startDownload(app)
         }
+    }
+
+    private fun handleDownloadCompleted(downloadId: Long) {
+        //create separate coroutine to handle downloaded file
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            val uri = downloadRepo.getDownloadedFileUri(downloadId)
+            if (uri == null) {
+                Log.e(TAG, "handleDownloadCompleted: Uri not found for downloadId: $downloadId")
+            }
+            downloadRepo.installNext(applicationContext, downloadId)
+        }
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val serviceChannel = NotificationChannel(
+                CHANNEL_ID,
+                "Saca Store Channel",
+                NotificationManager.IMPORTANCE_DEFAULT
+            )
+            val manager = getSystemService(NotificationManager::class.java)
+            manager.createNotificationChannel(serviceChannel)
+        }
+    }
+
+    private fun getNotification(): Notification {
+        val intent = Intent(this, AppListActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("Download Service")
+            .setContentText("Downloading in progress")
+            .setSmallIcon(R.drawable.download)
+            .setContentIntent(pendingIntent)
+            .build()
+        return notification
+    }
+
+    override fun onDestroy() {
+        sacaExecuter.unbindToService()
+        currentAttempt = 0
+        tokenJob?.cancel()
+        super.onDestroy()
     }
 
     companion object {
@@ -226,45 +169,40 @@ class DownloadService : Service() {
             context: Context,
             withAction: String,
             downloadId: Long = -1,
-            cvdAccessToken: String = ""
+            singleAppDownload: AppInfo? = null
         ) {
             val intent = Intent(context, DownloadService::class.java).apply {
                 action = withAction
                 if (downloadId >= 0) {
                     putExtra(DOWNLOAD_ID, downloadId)
                 }
-                if (cvdAccessToken.isNotEmpty()) {
-                    putExtra(CVD_ACCESS_TOKEN, cvdAccessToken)
+                singleAppDownload?.let {
+                    putExtra(SINGLE_APP_INFO, Json.encodeToString(singleAppDownload))
                 }
             }
 
             Log.d(TAG, "DownloadService::start withAction: $withAction")
+            //starting service for one of the pre-defined actions.
             if (withAction in actions) {
                 context.startService(intent)
             }
         }
 
         private val actions = listOf<String>(
-            ACTION_INSTALL_APP,
+            ACTION_GET_CVD_ACCESS_TOKEN,
+            ACTION_DOWNLOAD_COMPLETED,
             ACTION_PROCESS_INSTALLATION,
-            ACTION_FETCH_POLICIES,
-            ACTION_START_APK_DOWNLOADS,
-            ACTION_BIND_TO_SACA_SERVICE
+            ACTION_SINGLE_APP_DOWNLOAD
         )
 
-        const val ACTION_START_APK_DOWNLOADS =
-            "ae.tii.saca_store.service.ACTION_START_APK_DOWNLOADS"
-        const val ACTION_INSTALL_APP = "ae.tii.saca_store.service.ACTION_INSTALL_APP"
-        const val ACTION_FETCH_POLICIES = "ae.tii.saca_store.service.ACTION_FETCH_POLICIES"
-        const val ACTION_PROCESS_INSTALLATION =
-            "ae.tii.saca_store.service.ACTION_PROCESS_INSTALLATION"
-
-        const val ACTION_BIND_TO_SACA_SERVICE =
-            "ae.tii.saca_store.service.ACTION_BIND_TO_SACA_SERVICE"
-        const val DOWNLOAD_ID = "ae.tii.saca_store.service.DOWNLOAD_ID"
-        const val CVD_ACCESS_TOKEN = "ae.tii.saca_store.service.CVD_ACCESS_TOKEN"
-
+        const val ACTION_DOWNLOAD_COMPLETED = "saca_store.ACTION_DOWNLOAD_COMPLETED"
+        const val ACTION_SINGLE_APP_DOWNLOAD = "saca_store.ACTION_SINGLE_APP_DOWNLOAD"
+        const val ACTION_PROCESS_INSTALLATION = "saca_store.ACTION_PROCESS_INSTALLATION"
+        const val ACTION_GET_CVD_ACCESS_TOKEN = "saca_store.ACTION_GET_CVD_ACCESS_TOKEN"
+        const val DOWNLOAD_ID = "saca_store.DOWNLOAD_ID"
+        const val SINGLE_APP_INFO = "saca_store.SINGLE_APP_INFO"
         private const val TAG = "DownloadService"
+        private const val CHANNEL_ID = "SacaStoreChannel"
     }
 
 }
