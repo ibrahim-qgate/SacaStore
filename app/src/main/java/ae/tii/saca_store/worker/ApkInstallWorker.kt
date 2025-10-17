@@ -1,5 +1,7 @@
 package ae.tii.saca_store.worker
 
+import ae.tii.saca_store.domain.room.AppDatabase
+import ae.tii.saca_store.domain.room.DownloadDao
 import ae.tii.saca_store.receivers.InstallResultReceiver
 import android.annotation.SuppressLint
 import android.app.DownloadManager
@@ -27,16 +29,15 @@ class ApkInstallWorker(
 
     private val downloadManager =
         context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+    private val dao: DownloadDao = AppDatabase.get(context).downloadDao()
 
     override suspend fun doWork(): Result {
         try {
-            val downloadId = inputData.getLong(DOWNLOAD_ID, -1)
-            Log.d(TAG, "doWork: downloadId $downloadId")
-
-            if (downloadId != -1L) {
-                val uri = getDownloadedFileUri(downloadId)
-                uri?.let { installNext(it) }
-            }
+            val itemId = inputData.getString(DOWNLOAD_ID) ?: return Result.failure()
+            val item = dao.get(itemId) ?: return Result.failure()
+            Log.d(TAG, "doWork: itemId ${item.id}, uri: ${item.destPath}")
+            val apkFile = File(item.destPath)
+            installApkFile(context, apkFile)
         } catch (e: Exception) {
             Log.d(TAG, "doWork: Error installing: ${e.localizedMessage}")
             return Result.failure()

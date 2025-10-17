@@ -61,7 +61,7 @@ class AppViewModel @Inject constructor(
 
     fun startDownload(appInfo: AppInfo) {
         viewModelScope.launch(Dispatchers.IO) {
-            downloadRepo.startDownload(appInfo)
+            downloadRepo.enqueueDownload(appInfo)
         }
     }
 

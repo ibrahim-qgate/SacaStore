@@ -2,7 +2,10 @@ package ae.tii.saca_store.data.repos
 
 import ae.tii.saca_store.domain.AppInfo
 import ae.tii.saca_store.domain.repos.IDownloadRepo
+import ae.tii.saca_store.domain.room.DownloadDao
+import ae.tii.saca_store.domain.room.DownloadItem
 import ae.tii.saca_store.receivers.InstallResultReceiver
+import ae.tii.saca_store.worker.DownloadWorker
 import android.annotation.SuppressLint
 import android.app.DownloadManager
 import android.app.PendingIntent
@@ -14,11 +17,21 @@ import android.os.Build
 import android.os.Environment
 import android.util.Log
 import androidx.core.net.toUri
+import androidx.work.BackoffPolicy
+import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import java.io.File
+import java.net.URL
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.TimeUnit
 
 class DownloadRepoImpl(
-    context: Context
+    private val context: Context,
+    private val dao: DownloadDao
 ) : IDownloadRepo {
 
     private val apkUriQueue = ConcurrentLinkedQueue<Uri>()
@@ -34,12 +47,10 @@ class DownloadRepoImpl(
     private val downloadsDir =
         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
 
-
     override suspend fun startDownload(app: AppInfo): Long {
 
         val apkFile = File(downloadsDir, "${app.packageName}.apk")
 
-        // Delete existing file if it exists
         if (apkFile.exists()) {
             Log.i(TAG, "Already downloaded or downloading: ${app.packageName}")
             return -1
@@ -55,12 +66,43 @@ class DownloadRepoImpl(
                 Environment.DIRECTORY_DOWNLOADS,
                 "${app.packageName}.apk"
             )
-//            .setDestinationUri(Uri.fromFile(apkFile))
 
         val downloadId = downloadManager.enqueue(request)
         Log.d(TAG, "Download Started: $downloadId")
         downloadIds.add(downloadId)
         return downloadId
+    }
+
+    override suspend fun enqueueDownload(app: AppInfo) {
+
+        val url = URL(app.downloadUrl)
+        val filename = File(url.path).name
+        val destFile = File(downloadsDir, filename)
+
+        val downloadItem = DownloadItem(
+            id = app.packageName,
+            url = app.downloadUrl,
+            fileName = app.name,
+            destPath = destFile.absolutePath,
+        )
+
+        dao.insert(downloadItem)
+
+
+        val work = OneTimeWorkRequestBuilder<DownloadWorker>()
+            .setInputData(workDataOf(DownloadWorker.DOWNLOAD_ITEM_ID to downloadItem.id))
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .setRequiresBatteryNotLow(true)
+                    .build()
+            )
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10, TimeUnit.SECONDS)
+            .build()
+
+        WorkManager.getInstance(context)
+            .enqueueUniqueWork(downloadItem.id, ExistingWorkPolicy.REPLACE, work)
+
     }
 
     @SuppressLint("RequestInstallPackagesPolicy")
